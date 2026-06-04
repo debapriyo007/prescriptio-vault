@@ -1,4 +1,7 @@
-package com.debu.prescriptoVault.service;
+package com.debu.prescriptoVault.service.impl;
+
+import com.debu.prescriptoVault.exception.EmailSendException;
+import com.debu.prescriptoVault.service.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -43,7 +46,7 @@ public class EmailServiceImpl implements EmailService {
 
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Failed to send OTP email", e);
+            throw new EmailSendException("Failed to send OTP email", e);
         }
     }
 }

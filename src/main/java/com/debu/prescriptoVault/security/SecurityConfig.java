@@ -1,6 +1,5 @@
-package com.debu.prescriptoVault.config;
+package com.debu.prescriptoVault.security;
 
-import com.debu.prescriptoVault.service.JwtUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -50,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // public endpoints
                         .requestMatchers("/api/auth/**", "/api/patient/**", "/uploads/**").permitAll()
+                        .requestMatchers("/api/analytics/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

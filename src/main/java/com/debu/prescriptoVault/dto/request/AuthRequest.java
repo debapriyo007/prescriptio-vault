@@ -1,12 +1,13 @@
-package com.debu.prescriptoVault.dto;
+package com.debu.prescriptoVault.dto.request;
 import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-public class DoctorDto{
-    private Long id;
+public class AuthRequest {
+
     private String name;
     private String email;
+    private String password;
 }

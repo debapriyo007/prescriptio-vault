@@ -32,5 +32,4 @@ public class Prescription{
     @JoinColumn(name="doctor_id",referencedColumnName="id")
     private Doctor doctor;
 
-
 }

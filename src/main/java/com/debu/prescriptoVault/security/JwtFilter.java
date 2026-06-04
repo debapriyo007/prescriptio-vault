@@ -1,5 +1,4 @@
-package com.debu.prescriptoVault.config;
-import com.debu.prescriptoVault.service.JwtUserDetailsService;
+package com.debu.prescriptoVault.security;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,4 +1,4 @@
-package com.debu.prescriptoVault.dto;
+package com.debu.prescriptoVault.dto.response;
 import lombok.*;
 
 @AllArgsConstructor

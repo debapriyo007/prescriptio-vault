@@ -1,4 +1,4 @@
-package com.debu.prescriptoVault.service;
+package com.debu.prescriptoVault.security;
 import com.debu.prescriptoVault.entity.Doctor;
 import com.debu.prescriptoVault.repository.DoctorRepository;
 import lombok.AllArgsConstructor;

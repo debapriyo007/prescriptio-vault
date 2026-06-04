@@ -53,4 +53,6 @@ public class Patient{
         O_NEG,
         AB_NEG
     }
+
+
 }

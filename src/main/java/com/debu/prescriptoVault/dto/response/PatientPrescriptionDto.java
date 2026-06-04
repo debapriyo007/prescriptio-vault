@@ -1,4 +1,4 @@
-package com.debu.prescriptoVault.dto;
+package com.debu.prescriptoVault.dto.response;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -14,5 +14,5 @@ public class PatientPrescriptionDto{
     private String doctorEmail;
     private String patientName;
     private String patientEmail;
+    private String fileUrl;
 }
-
