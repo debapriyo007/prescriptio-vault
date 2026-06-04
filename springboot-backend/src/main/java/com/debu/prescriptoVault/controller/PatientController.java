@@ -1,25 +1,27 @@
 package com.debu.prescriptoVault.controller;
 
-import com.debu.prescriptoVault.dto.PatientPrescriptionDto;
+import com.debu.prescriptoVault.dto.response.PatientPrescriptionDto;
 import com.debu.prescriptoVault.entity.Patient;
 import com.debu.prescriptoVault.entity.Prescription;
-import com.debu.prescriptoVault.service.DoctorService;
-import com.debu.prescriptoVault.service.EmailService;
+import com.debu.prescriptoVault.exception.ResourceNotFoundException;
 import com.debu.prescriptoVault.service.FileStorageService;
 import com.debu.prescriptoVault.service.PatientService;
 import com.debu.prescriptoVault.service.PrescriptionService;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.net.MalformedURLException;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * Controller class for handling patient-specific HTTP operations.
+ * Provides endpoints for requesting/verifying OTPs and downloading prescriptions.
+ */
 @RestController
 @RequestMapping("/api")
 @AllArgsConstructor
@@ -27,80 +29,88 @@ import java.util.stream.Collectors;
 public class PatientController {
 
     private final FileStorageService fileStorageService;
-    private final DoctorService doctorService;
     private final PrescriptionService prescriptionService;
     private final PatientService patientService;
-    private final EmailService emailService;
 
-
-
-
+    /**
+     * Downloads a prescription PDF file by its unique identifier.
+     *
+     * @param id The unique identifier of the prescription.
+     * @return ResponseEntity with the PDF resource as an attachment, or error details.
+     */
     @GetMapping("/patient/download")
     public ResponseEntity<?> downloadPrescriptionById(@RequestParam("id") Long id) {
         try {
             Prescription p = prescriptionService.findById(id);
-            if (p == null)
-                return ResponseEntity.status(404).body("Not found");
-
             Resource resource = fileStorageService.loadFileAsResource(p.getFilePath());
-            if (resource == null)
-                return ResponseEntity.status(404).body("File not found");
+            if (resource == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
+            }
 
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentType(MediaType.APPLICATION_PDF)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + p.getFileName() + "\"")
                     .body(resource);
         } catch (MalformedURLException e) {
-            return ResponseEntity.status(500).body("File error");
+            System.err.println("Malformed URL for prescription file download: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File download path error");
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error downloading prescription: " + e.getMessage());
         }
     }
 
-
-
-
+    /**
+     * Requests a dynamic one-time password (OTP) for patient verification.
+     * Generates and emails the OTP if the patient exists.
+     *
+     * @param email The registered email of the patient.
+     * @return ResponseEntity confirming OTP dispatch or containing error details.
+     */
     @PostMapping("/patient/request-otp")
     public ResponseEntity<?> requestOtp(@RequestParam("email") String email) {
         try {
-            Patient patient = patientService.findByEmail(email);
-            if (patient == null)
-                return ResponseEntity.status(404).body("Patient not found");
-
-            // Generate, persist, and send OTP via PatientService which internally calls EmailService
+            // Will throw ResourceNotFoundException if the patient is not found
             patientService.sendOtp(email);
-
             return ResponseEntity.ok("OTP sent to email");
+        } catch (ResourceNotFoundException e) {
+            // Handle when the patient email does not exist in the database
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to send OTP");
+            // Catch-all block for any mail server failures or other exceptions
+            System.err.println("Failed to request OTP for email " + email + ": " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send OTP: " + e.getMessage());
         }
     }
 
-
-
-
+    /**
+     * Verifies the patient's OTP and retrieves their list of uploaded prescriptions.
+     *
+     * @param email The registered email of the patient.
+     * @param otp   The OTP received by the patient.
+     * @return ResponseEntity with the list of prescriptions, or unauthorized/error response.
+     */
     @PostMapping("/patient/verify-otp")
     public ResponseEntity<?> verifyOtpAndGetPrescriptions(@RequestParam("email") String email,
                                                           @RequestParam("otp") String otp) {
         try {
             boolean ok = patientService.verifyOtp(email, otp);
-            if (!ok) return ResponseEntity.status(401).body("Invalid or expired OTP");
+            if (!ok) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired OTP");
+            }
 
+            // Will throw ResourceNotFoundException if the patient is not found
             Patient patient = patientService.findByEmail(email);
-            if (patient == null) return ResponseEntity.status(404).body("Patient not found");
-
-            List<Prescription> list = prescriptionService.findByPatientId(patient.getId());
-            List<PatientPrescriptionDto> resp = list.stream().map(x -> new PatientPrescriptionDto(
-                    x.getId(),
-                    x.getFileName(),
-                    x.getUploadedAt(),
-                    x.getDoctor() != null ? x.getDoctor().getName() : null,
-                    x.getDoctor() != null ? x.getDoctor().getEmail() : null,
-                    patient.getName(),
-                    patient.getEmail()
-            )).collect(Collectors.toList());
+            List<PatientPrescriptionDto> resp = prescriptionService.findByPatientId(patient.getId());
 
             return ResponseEntity.ok(resp);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error");
+            System.err.println("OTP verification failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Verification error: " + e.getMessage());
         }
     }
 }
+

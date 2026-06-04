@@ -1,7 +1,7 @@
 package com.debu.prescriptoVault.controller;
-import com.debu.prescriptoVault.config.JwtUtil;
-import com.debu.prescriptoVault.dto.AuthRequest;
-import com.debu.prescriptoVault.dto.AuthResponse;
+import com.debu.prescriptoVault.security.JwtUtil;
+import com.debu.prescriptoVault.dto.request.AuthRequest;
+import com.debu.prescriptoVault.dto.response.AuthResponse;
 import com.debu.prescriptoVault.entity.Doctor;
 import com.debu.prescriptoVault.service.DoctorService;
 import lombok.AllArgsConstructor;
